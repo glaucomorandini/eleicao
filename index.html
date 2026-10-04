@@ -34,7 +34,7 @@
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
   .card { background: var(--card); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; }
   .card b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
-  .card small { color: var(--sub); }
+  .card small { color: var(--sub); display: block; }
   .eleitos-lista { margin-bottom: 12px; }
   .eleitos-lista h2 { font-size: 13px; color: var(--sub); font-weight: 600; margin: 0 0 6px; }
   .eleitos-lista ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
@@ -161,6 +161,7 @@ const CARGOS = { fed: { nome: 'Dep. Federal', cod: () => 6 }, est: { nome: 'Dep.
 
 const fmt = new Intl.NumberFormat('pt-BR');
 const fmt1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+const fmtPct = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const int = (v) => { const n = parseInt(String(v ?? '').replace(/\D/g, ''), 10); return Number.isFinite(n) ? n : 0; };
 const dec = (v) => { const n = parseFloat(String(v ?? '').replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -235,7 +236,7 @@ function analisar(raw, uf) {
 
   const r = {
     uf, vagas, validos, qe: calc.qe, qeTse: int(carg.qe), final: raw.tf === 's',
-    pst: dec((raw.s || {}).pst), hora: [raw.dg, raw.hg].filter(Boolean).join(' '),
+    pst: dec((raw.s || {}).pst), secoes: int((raw.s || {}).ts), apuradas: int((raw.s || {}).st), hora: [raw.dg, raw.hg].filter(Boolean).join(' '),
     legendaSemPartido: vv > somaUnidades ? vv - somaUnidades : 0,
     temAlvo: !!alvoUnidade, siglaAlvo, alvoVotos, conf, unidadeVotos: 0, nomeUnidade: '', federado: false,
     vagasAlvo: 0, candidatos: [], faltam: null, quemRecebe: null, corte: null, partidos: [],
@@ -362,12 +363,15 @@ function desenhar() {
 
   const total = (c) => Object.values(estado[c]).reduce((s, r) => s + r.vagasAlvo, 0);
   const votos = ufs.reduce((s, uf) => s + dados[uf].alvoVotos, 0);
-  const pst = ufs.length ? ufs.reduce((s, uf) => s + dados[uf].pst, 0) / ufs.length : 0;
+  // Seções apuradas no país: soma das seções de todas as UFs (como o TSE), não média dos percentuais.
+  const secoes = ufs.reduce((s, uf) => s + dados[uf].secoes, 0);
+  const apuradas = ufs.reduce((s, uf) => s + dados[uf].apuradas, 0);
+  const pst = secoes ? (100 * apuradas) / secoes : ufs.length ? ufs.reduce((s, uf) => s + dados[uf].pst, 0) / ufs.length : 0;
   document.getElementById('cards').innerHTML = `
     <div class="card"><small>Dep. Federal eleitos agora</small><b>${total('fed')}</b></div>
     <div class="card"><small>Dep. Estadual eleitos agora</small><b>${total('est')}</b></div>
     <div class="card"><small>Votos ${esc(nome || 'do partido')} · ${CARGOS[cargoAtivo].nome}</small><b>${fmt.format(votos)}</b></div>
-    <div class="card"><small>Apuração média das UFs</small><b>${fmt1.format(pst)}%</b></div>`;
+    <div class="card"><small>Seções apuradas no Brasil${ufs.length < 27 ? ` (${ufs.length} UFs)` : ''}</small><b>${fmtPct.format(pst)}%</b>${secoes ? `<small>${fmt.format(apuradas)} de ${fmt.format(secoes)}</small>` : ''}</div>`;
 
   const eleitos = ufs.flatMap((uf) => dados[uf].candidatos.filter((c) => c.eleito).map((c) => ({ ...c, uf })))
     .sort((a, b) => a.uf.localeCompare(b.uf) || b.votos - a.votos);
@@ -517,7 +521,7 @@ function demo(cargo, uf) {
   const vv = agr.reduce((s, a) => s + int(a.par[0].tvtn) + int(a.par[0].tvtl), 0);
   const agora = new Date();
   return { tf: progresso >= 1 ? 's' : 'n', dg: agora.toLocaleDateString('pt-BR'), hg: agora.toLocaleTimeString('pt-BR'),
-    s: { pst: (progresso * 100).toFixed(2).replace('.', ',') }, v: { vv: String(vv) },
+    s: { pst: (progresso * 100).toFixed(2).replace('.', ','), ts: String(fed * 1000), st: String(Math.round(fed * 1000 * progresso)) }, v: { vv: String(vv) },
     carg: [{ cd: String(CARGOS[cargo].cod(uf)), nv: String(vagas), agr }] };
 }
 </script>
