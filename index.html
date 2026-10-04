@@ -343,9 +343,12 @@ function desenhar() {
   if (ufs.some((uf) => dados[uf].legendaSemPartido > 0)) avisos.push('Atenção: o TSE não discriminou parte dos votos de legenda por partido; a projeção pode ficar um pouco imprecisa.');
   document.getElementById('aviso').innerHTML = avisos.map((a) => `<div class="aviso">${a}</div>`).join('');
 
+  // Mais chance primeiro: quem já tem cadeira (mais cadeiras antes) e depois quem está mais perto da
+  // próxima, medindo o que falta em fração do QE (compara estados grandes e pequenos).
+  const distancia = (r) => (r.faltam == null || !r.qe ? Infinity : r.faltam / r.qe);
   ufs.sort((a, b) => {
     const x = dados[a], y = dados[b];
-    return y.vagasAlvo - x.vagasAlvo || (x.faltam ?? Infinity) - (y.faltam ?? Infinity) || a.localeCompare(b);
+    return y.vagasAlvo - x.vagasAlvo || distancia(x) - distancia(y) || y.alvoVotos - x.alvoVotos || a.localeCompare(b);
   });
   document.getElementById('linhas').innerHTML = ufs.map((uf) => linha(dados[uf])).join('');
 }
