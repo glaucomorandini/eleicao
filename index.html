@@ -35,6 +35,10 @@
   .card { background: var(--card); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; }
   .card b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
   .card small { color: var(--sub); }
+  .eleitos-lista { margin-bottom: 12px; }
+  .eleitos-lista h2 { font-size: 13px; color: var(--sub); font-weight: 600; margin: 0 0 6px; }
+  .eleitos-lista ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .eleitos-lista li { background: var(--ok-suave); color: var(--ok); border-radius: 999px; padding: 3px 10px; font-weight: 600; font-size: 13px; }
   .aviso { background: var(--cor-suave); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
   .tabela { background: var(--card); border: 1px solid var(--linha); border-radius: 10px; overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
@@ -89,6 +93,7 @@
 <main>
   <div id="aviso"></div>
   <div class="cards" id="cards"></div>
+  <div class="card eleitos-lista" id="eleitos"></div>
   <div class="tabela"><table id="principal">
     <thead><tr>
       <th>UF</th><th>Apurado</th><th>Vagas</th><th>QE</th><th>Votos do partido</th>
@@ -325,6 +330,11 @@ function desenhar() {
     <div class="card"><small>Dep. Estadual eleitos agora</small><b>${total('est')}</b></div>
     <div class="card"><small>Votos ${esc(nome || 'do partido')} · ${CARGOS[cargoAtivo].nome}</small><b>${fmt.format(votos)}</b></div>
     <div class="card"><small>Apuração média das UFs</small><b>${fmt1.format(pst)}%</b></div>`;
+
+  const eleitos = ufs.flatMap((uf) => dados[uf].candidatos.filter((c) => c.eleito).map((c) => ({ ...c, uf })))
+    .sort((a, b) => a.uf.localeCompare(b.uf) || b.votos - a.votos);
+  document.getElementById('eleitos').innerHTML = `<h2>Eleitos agora · ${CARGOS[cargoAtivo].nome} (${eleitos.length})</h2>
+    ${eleitos.length ? `<ul>${eleitos.map((c) => `<li title="${fmt.format(c.votos)} votos · ${esc(c.eleito)}">${esc(c.nome)} - ${c.uf.toUpperCase()}</li>`).join('')}</ul>` : '<span class="sub">Ninguém por enquanto.</span>'}`;
 
   const avisos = [];
   if (DEMO) avisos.push('Modo demonstração: dados <b>fictícios</b>.');
