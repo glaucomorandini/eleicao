@@ -192,6 +192,7 @@ function analisar(raw, uf) {
   let alvoUnidade = null;
   let siglaAlvo = '';
   let alvoVotos = 0;
+  const conf = { candidatos: 0, validos: 0, foraDosValidos: 0, legenda: 0, nominalTse: null };
   const candAlvo = [];
   const todosCand = new Map();
   for (const agr of carg.agr || []) {
@@ -199,20 +200,28 @@ function analisar(raw, uf) {
     const candidatos = [];
     for (const par of agr.par || []) {
       let nominal = 0;
+      let todos = 0;
       const doAlvo = ehAlvo(par);
       for (const c of par.cand || []) {
         const apto = !c.dvt || /^v[aá]lido$/i.test(String(c.dvt).trim());
         const cand = { id: String(c.sqcand || c.n), votos: int(c.vap), nascimento: c.dt, apto,
           nome: c.nmu || c.nm, numero: c.n, partido: par.sg, dvt: c.dvt || '', stTse: c.st || '' };
         if (/^v[aá]lido/i.test(String(c.dvt || 'Válido'))) nominal += cand.votos;
+        todos += cand.votos;
         candidatos.push(cand);
         todosCand.set(cand.id, cand);
         if (doAlvo) candAlvo.push(cand);
       }
+      const somaValidos = nominal;
       if (par.tvtn != null && par.tvtn !== '') nominal = int(par.tvtn);
-      const total = nominal + int(par.tvtl ?? par.tval);
+      const legenda = int(par.tvtl ?? par.tval);
+      const total = nominal + legenda;
       votos += total;
-      if (doAlvo) { alvoUnidade = String(agr.n); siglaAlvo = par.sg; alvoVotos += total; }
+      if (doAlvo) {
+        alvoUnidade = String(agr.n); siglaAlvo = par.sg; alvoVotos += total;
+        conf.candidatos += todos; conf.validos += somaValidos; conf.foraDosValidos += todos - somaValidos;
+        conf.legenda += legenda; if (par.tvtn != null && par.tvtn !== '') conf.nominalTse = (conf.nominalTse || 0) + int(par.tvtn);
+      }
     }
     const id = String(agr.n);
     nomesUnidade[id] = agr.tp === 'f' ? (agr.com || agr.nm) : (agr.par || []).map((p) => p.sg).join('/');
@@ -228,7 +237,7 @@ function analisar(raw, uf) {
     uf, vagas, validos, qe: calc.qe, qeTse: int(carg.qe), final: raw.tf === 's',
     pst: dec((raw.s || {}).pst), hora: [raw.dg, raw.hg].filter(Boolean).join(' '),
     legendaSemPartido: vv > somaUnidades ? vv - somaUnidades : 0,
-    temAlvo: !!alvoUnidade, siglaAlvo, alvoVotos, unidadeVotos: 0, nomeUnidade: '', federado: false,
+    temAlvo: !!alvoUnidade, siglaAlvo, alvoVotos, conf, unidadeVotos: 0, nomeUnidade: '', federado: false,
     vagasAlvo: 0, candidatos: [], faltam: null, quemRecebe: null, corte: null, partidos: [],
   };
   // nota de corte: menor votação entre os eleitos do estado
@@ -391,7 +400,8 @@ function linha(r) {
   const votosCel = !r.temAlvo ? '<span class="sub">sem candidatos</span>' : `
     ${fmt.format(r.alvoVotos)} ${r.delta > 0 ? `<span class="delta">+${fmt.format(r.delta)}</span>` : ''}
     <div class="sub">${fmt1.format(pctQe)}% do QE${r.federado ? ` (federação ${esc(r.nomeUnidade)}: ${fmt.format(r.unidadeVotos)})` : ''}</div>
-    <div class="barra" title="80% e 100% do QE"><i style="width:${largura}%"></i><s style="left:40%"></s><s style="left:50%"></s></div>`;
+    <div class="barra" title="80% e 100% do QE"><i style="width:${largura}%"></i><s style="left:40%"></s><s style="left:50%"></s></div>
+    ${r.conf.foraDosValidos > 0 ? `<div class="pill risco" style="margin-top:4px">⚠ ${fmt.format(r.conf.foraDosValidos)} votos anulados/sub judice</div>` : ''}`;
   const faltam = r.faltam == null ? '<span class="sub">—</span>'
     : `${fmt.format(r.faltam)}<div class="sub">p/ ${esc(r.quemRecebe.nome)}</div>`;
   return `
@@ -422,6 +432,10 @@ function detalhe(r) {
       · 10% QE = ${fmt.format(Math.ceil(r.qe * 0.1))} · 20% QE = ${fmt.format(Math.ceil(r.qe * 0.2))} · 80% QE = ${fmt.format(Math.ceil(r.qe * 0.8))}
       ${r.corte ? `· nota de corte: ${esc(r.corte.nome)} (${esc(r.corte.partido)}) com ${fmt.format(r.corte.votos)}` : ''}
       · arquivo do TSE: ${esc(r.hora)}</p>
+    ${r.temAlvo ? `<p class="sub"><b>Conferência ${esc(r.siglaAlvo)}:</b> soma dos votos de todos os candidatos ${fmt.format(r.conf.candidatos)}
+      · válidos ${fmt.format(r.conf.validos)}${r.conf.nominalTse != null ? ` (TSE: ${fmt.format(r.conf.nominalTse)})` : ''}
+      · anulados/sub judice ${fmt.format(r.conf.foraDosValidos)} · legenda ${fmt.format(r.conf.legenda)}
+      · total que conta ${fmt.format(r.alvoVotos)} · ${r.partidos.findIndex((p) => p.alvo) + 1}º de ${r.partidos.filter((p) => p.votos > 0).length} em cadeiras/votos</p>` : ''}
     <div class="grade">
       <div><h3>Candidatos ${esc(r.siglaAlvo)}</h3>
         <div class="tabela"><table><thead><tr><th>Nome</th><th>Votos</th><th class="c-pqe">% QE</th><th class="esq">Agora</th><th class="esq c-tse">TSE</th></tr></thead>
