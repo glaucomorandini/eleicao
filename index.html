@@ -70,9 +70,38 @@
   summary { cursor: pointer; font-weight: 600; }
   footer { color: var(--sub); font-size: 12px; margin-top: 16px; }
   a { color: inherit; }
-  @media (max-width: 640px) {
-    #principal > thead > tr > th:nth-child(3), #principal > thead > tr > th:nth-child(4),
-    #principal > tbody > tr.uf > td:nth-child(3), #principal > tbody > tr.uf > td:nth-child(4) { display: none; }
+  /* Celular: cada UF vira um cartão, sem rolagem lateral. */
+  @media (max-width: 700px) {
+    header { padding: 8px 16px; }
+    h1 { font-size: 16px; }
+    .abas button, .btn { padding: 6px 10px; }
+    main { padding: 10px 16px 32px; }
+    .cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .card b { font-size: 20px; }
+    .tabela { overflow: visible; border: 0; background: none; }
+    #principal, #principal > tbody { display: block; }
+    #principal > thead { display: none; }
+    #principal > tbody > tr.uf {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 10px; padding: 12px;
+      margin-top: 10px; border: 1px solid var(--linha); border-radius: 10px; background: var(--card);
+    }
+    #principal > tbody > tr.uf.tem { background: var(--ok-suave); border-color: var(--ok); }
+    #principal > tbody > tr.uf > td { display: block; padding: 0; border: 0; text-align: left; white-space: normal; min-width: 0; }
+    #principal > tbody > tr.uf > td[data-rotulo]::before { content: attr(data-rotulo); display: block; font-size: 11px; color: var(--sub); }
+    .c-uf { grid-column: span 2; order: 1; }
+    .c-cad { order: 2; text-align: right !important; align-self: start; }
+    .c-apur, .c-vagas, .c-qe { order: 3; }
+    .c-votos { grid-column: span 3; order: 4; }
+    .c-falta { grid-column: span 3; order: 5; }
+    .c-nomes { grid-column: span 3; order: 6; }
+    .c-votos .barra { max-width: none; }
+    #principal > tbody > tr:not(.uf) { display: block; }
+    #principal > tbody > tr:not(.uf) > td.detalhe { display: block; padding: 10px 0 0; border: 0; background: none; }
+    .grade { grid-template-columns: 1fr; }
+    .detalhe .tabela { overflow-x: visible; border: 1px solid var(--linha); background: var(--card); }
+    .detalhe th, .detalhe td { padding: 6px 8px; white-space: normal; }
+    .detalhe .c-tse, .detalhe .c-pqe { display: none; }
+    .detalhe .pill { white-space: nowrap; font-size: 11px; padding: 1px 6px; }
   }
 </style>
 </head>
@@ -367,14 +396,14 @@ function linha(r) {
     : `${fmt.format(r.faltam)}<div class="sub">p/ ${esc(r.quemRecebe.nome)}</div>`;
   return `
   <tr class="uf ${r.vagasAlvo ? 'tem' : ''}" data-uf="${r.uf}">
-    <td><b>${r.uf.toUpperCase()}</b> ${aberto ? '▾' : '▸'}<div class="sub">${esc(UFS[r.uf])}</div></td>
-    <td>${fmt1.format(r.pst)}%${r.final ? '<div class="sub">final</div>' : ''}</td>
-    <td>${r.vagas}</td>
-    <td>${fmt.format(r.qe)}</td>
-    <td>${votosCel}</td>
-    <td>${r.vagasAlvo ? `<span class="pill ok">${r.vagasAlvo}</span>` : '<span class="pill nao">0</span>'}</td>
-    <td>${faltam}</td>
-    <td class="nomes">${eleitos.map((c) => `${esc(c.nome)} <span class="sub">(${fmt.format(c.votos)} · ${c.eleito})</span>`).join('<br>') || '<span class="sub">—</span>'}</td>
+    <td class="c-uf"><b>${r.uf.toUpperCase()}</b> ${aberto ? '▾' : '▸'}<div class="sub">${esc(UFS[r.uf])}</div></td>
+    <td class="c-apur" data-rotulo="Apurado">${fmt1.format(r.pst)}%${r.final ? '<div class="sub">final</div>' : ''}</td>
+    <td class="c-vagas" data-rotulo="Vagas">${r.vagas}</td>
+    <td class="c-qe" data-rotulo="QE">${fmt.format(r.qe)}</td>
+    <td class="c-votos" data-rotulo="Votos do partido">${votosCel}</td>
+    <td class="c-cad">${r.vagasAlvo ? `<span class="pill ok">${r.vagasAlvo} ${r.vagasAlvo > 1 ? 'cadeiras' : 'cadeira'}</span>` : '<span class="pill nao">0 cadeiras</span>'}</td>
+    <td class="c-falta" data-rotulo="Faltam p/ +1 cadeira">${faltam}</td>
+    <td class="nomes c-nomes" data-rotulo="Eleitos agora">${eleitos.map((c) => `${esc(c.nome)} <span class="sub">(${fmt.format(c.votos)} · ${c.eleito})</span>`).join('<br>') || '<span class="sub">—</span>'}</td>
   </tr>
   ${aberto ? `<tr><td colspan="8" class="detalhe">${detalhe(r)}</td></tr>` : ''}`;
 }
@@ -383,9 +412,9 @@ function detalhe(r) {
   const cands = r.candidatos.map((c) => `
     <tr${c.eleito ? ' class="eleito"' : ''}><td>${esc(c.nome)} <span class="sub">${esc(c.numero)}</span></td>
       <td>${fmt.format(c.votos)}</td>
-      <td>${r.qe ? fmt1.format((100 * c.votos) / r.qe) + '%' : '—'}</td>
+      <td class="c-pqe">${r.qe ? fmt1.format((100 * c.votos) / r.qe) + '%' : '—'}</td>
       <td>${c.eleito ? `<span class="pill ok">Eleito (${c.eleito})</span>` : !c.apto ? `<span class="pill risco">${esc(c.dvt)}</span>` : '<span class="pill nao">Suplente</span>'}</td>
-      <td class="sub">${esc(c.stTse)}</td></tr>`).join('');
+      <td class="sub c-tse">${esc(c.stTse)}</td></tr>`).join('');
   const partidos = r.partidos.filter((p) => p.votos > 0).map((p) => `
     <tr${p.alvo ? ' style="font-weight:700"' : ''}><td>${esc(p.nome)}</td><td>${fmt.format(p.votos)}</td><td>${p.qp}</td><td>${p.vagas}</td></tr>`).join('');
   return `
@@ -395,7 +424,7 @@ function detalhe(r) {
       · arquivo do TSE: ${esc(r.hora)}</p>
     <div class="grade">
       <div><h3>Candidatos ${esc(r.siglaAlvo)}</h3>
-        <div class="tabela"><table><thead><tr><th>Nome</th><th>Votos</th><th>% QE</th><th class="esq">Agora</th><th class="esq">TSE</th></tr></thead>
+        <div class="tabela"><table><thead><tr><th>Nome</th><th>Votos</th><th class="c-pqe">% QE</th><th class="esq">Agora</th><th class="esq c-tse">TSE</th></tr></thead>
         <tbody>${cands || '<tr><td colspan="5">Sem candidatos</td></tr>'}</tbody></table></div></div>
       <div><h3>Cadeiras por partido/federação (projeção)</h3>
         <div class="tabela"><table><thead><tr><th>Partido</th><th>Votos</th><th>QP</th><th>Vagas</th></tr></thead>
