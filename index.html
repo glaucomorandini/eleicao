@@ -165,6 +165,10 @@ const fmtPct = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximu
 const int = (v) => { const n = parseInt(String(v ?? '').replace(/\D/g, ''), 10); return Number.isFinite(n) ? n : 0; };
 const dec = (v) => { const n = parseFloat(String(v ?? '').replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const porHora = (a, b) => {
+  const k = (h) => { const m = /^(\d{2})\/(\d{2})\/(\d{4}) (.*)$/.exec(h || ''); return m ? `${m[3]}${m[2]}${m[1]} ${m[4]}` : ''; };
+  return k(a).localeCompare(k(b));
+};
 function semAcento(s) { return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 const norm = (s) => semAcento(s).toUpperCase().trim();
 const lerLocal = (k, p) => { try { return localStorage.getItem(k) ?? p; } catch { return p; } };
@@ -176,6 +180,8 @@ const eleitosAntes = {};                     // `${cargo}-${uf}` -> Set de nomes
 let cargoAtivo = lerLocal('cargo', 'fed') === 'est' ? 'est' : 'fed';
 let abertos = new Set(JSON.parse(lerLocal('abertos', '[]')));
 let eleicao = params.get('ele') || '6259';   // Eleições Gerais Estaduais 2026, 1º turno
+let eleicaoFederal = '6257';                  // Presidente 2026, 1º turno (só para comparar a % apurada)
+let presidente = null;                       // { pst, st, ts, hora } do arquivo Presidente/Brasil
 let proximaEm = 0;
 let ultimoErro = '';
 
@@ -284,8 +290,23 @@ async function descobrirEleicao() {
       if (pl.c !== CICLO) continue;
       const e = (pl.e || []).find((x) => String(x.t) === '1' && String(x.tp) === '1');
       if (e) eleicao = String(e.cd);
+      const f = (pl.e || []).find((x) => String(x.t) === '1' && String(x.tp) === '8');
+      if (f) eleicaoFederal = String(f.cd);
     }
   } catch { /* fica com o padrão */ }
+}
+
+// Mesmo arquivo que o site do TSE usa em "Presidente · Brasil": serve para comparar a % apurada.
+async function buscarPresidente() {
+  if (DEMO) return;
+  try {
+    const e6 = String(eleicaoFederal).padStart(6, '0');
+    const res = await fetch(`${BASE}/${CICLO}/${eleicaoFederal}/dados/br/br-c0001-e${e6}-u.json`, { cache: 'no-cache' });
+    if (!res.ok) return;
+    const raw = await res.json();
+    const sec = raw.s || {};
+    presidente = { pst: dec(sec.pst), st: int(sec.st), ts: int(sec.ts), hora: [raw.dg, raw.hg].filter(Boolean).join(' ') };
+  } catch { /* só informativo */ }
 }
 
 async function buscarJson(cargo, uf) {
@@ -324,7 +345,7 @@ async function atualizar() {
       }
     }
   };
-  await Promise.all(Array.from({ length: PARALELO }, trabalhador));
+  await Promise.all([...Array.from({ length: PARALELO }, trabalhador), buscarPresidente()]);
   if (!falhas) ultimoErro = '';
   else if (falhas === tarefas.length) ultimoErro = `Sem conexão com o TSE (${ultimoErro}). Tentando de novo…`;
   else ultimoErro = `${falhas} arquivo(s) falharam nesta rodada; tentando de novo.`;
@@ -366,12 +387,14 @@ function desenhar() {
   // Seções apuradas no país: soma das seções de todas as UFs (como o TSE), não média dos percentuais.
   const secoes = ufs.reduce((s, uf) => s + dados[uf].secoes, 0);
   const apuradas = ufs.reduce((s, uf) => s + dados[uf].apuradas, 0);
+  const horaMax = ufs.map((uf) => dados[uf].hora).sort(porHora).pop() || '';
   const pst = secoes ? (100 * apuradas) / secoes : ufs.length ? ufs.reduce((s, uf) => s + dados[uf].pst, 0) / ufs.length : 0;
   document.getElementById('cards').innerHTML = `
     <div class="card"><small>Dep. Federal eleitos agora</small><b>${total('fed')}</b></div>
     <div class="card"><small>Dep. Estadual eleitos agora</small><b>${total('est')}</b></div>
     <div class="card"><small>Votos ${esc(nome || 'do partido')} · ${CARGOS[cargoAtivo].nome}</small><b>${fmt.format(votos)}</b></div>
-    <div class="card"><small>Seções apuradas no Brasil${ufs.length < 27 ? ` (${ufs.length} UFs)` : ''}</small><b>${fmtPct.format(pst)}%</b>${secoes ? `<small>${fmt.format(apuradas)} de ${fmt.format(secoes)}</small>` : ''}</div>`;
+    <div class="card"><small>Seções apuradas no Brasil${ufs.length < 27 ? ` (${ufs.length} UFs)` : ''}</small><b>${fmtPct.format(pst)}%</b>${secoes ? `<small>${fmt.format(apuradas)} de ${fmt.format(secoes)} · deputados, arquivos até ${esc(horaMax.split(' ')[1] || horaMax)}</small>` : ''}
+      ${presidente ? `<small>TSE Presidente/Brasil: <b style="display:inline;font-size:inherit">${fmtPct.format(presidente.pst)}%</b> (${fmt.format(presidente.st)} de ${fmt.format(presidente.ts)}) · ${esc((presidente.hora.split(' ')[1]) || presidente.hora)}</small>` : ''}</div>`;
 
   const eleitos = ufs.flatMap((uf) => dados[uf].candidatos.filter((c) => c.eleito).map((c) => ({ ...c, uf })))
     .sort((a, b) => a.uf.localeCompare(b.uf) || b.votos - a.votos);
@@ -452,7 +475,7 @@ function detalhe(r) {
 
 function relogio() {
   const s = Math.max(0, Math.ceil((proximaEm - Date.now()) / 1000));
-  const horas = Object.values(estado[cargoAtivo]).map((r) => r.hora).sort().pop();
+  const horas = Object.values(estado[cargoAtivo]).map((r) => r.hora).sort(porHora).pop();
   const el = document.getElementById('status');
   el.className = ultimoErro ? 'erro' : '';
   el.textContent = ultimoErro || `${horas ? `TSE: ${horas} · ` : ''}próxima atualização em ${s}s · eleição ${eleicao}`;
