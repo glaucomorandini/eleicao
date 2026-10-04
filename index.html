@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missão · Deputados 2026</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --txt: #16181d; --sub: #5d6470; --linha: #e3e6eb;
+    --cor: #e09a00; --cor-suave: #fff4d6; --ok: #138a4a; --ok-suave: #e3f5ea; --risco: #b3261e; --risco-suave: #fdecea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111317; --card: #1a1d23; --txt: #eceef2; --sub: #9aa1ad; --linha: #2b2f37;
+      --cor: #ffb52e; --cor-suave: #3a2d0f; --ok: #4cc485; --ok-suave: #12301f; --risco: #ff7b72; --risco-suave: #3a1715;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 2; background: var(--card); border-bottom: 1px solid var(--linha); padding: 10px 16px; }
+  .topo { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 17px; margin: 0; }
+  h1 span { color: var(--cor); }
+  #status { color: var(--sub); font-size: 12px; }
+  #status.erro { color: var(--risco); }
+  .abas { display: flex; gap: 6px; }
+  .abas button, .btn { border: 1px solid var(--linha); background: var(--card); color: var(--txt); padding: 6px 12px; border-radius: 999px; cursor: pointer; font: inherit; }
+  .abas button[aria-pressed="true"] { background: var(--cor); border-color: var(--cor); color: #1b1300; font-weight: 600; }
+  main { max-width: 1200px; margin: 0 auto; padding: 12px 16px 40px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .card { background: var(--card); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; }
+  .card b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .card small { color: var(--sub); }
+  .aviso { background: var(--cor-suave); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
+  .tabela { background: var(--card); border: 1px solid var(--linha); border-radius: 10px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--linha); text-align: right; white-space: nowrap; }
+  th { font-size: 12px; color: var(--sub); font-weight: 600; background: var(--card); }
+  th:first-child, td:first-child, .esq { text-align: left; }
+  tr.uf { cursor: pointer; }
+  tr.uf:hover { background: var(--bg); }
+  tr.uf.tem { background: var(--ok-suave); }
+  .nomes { white-space: normal; text-align: left; min-width: 180px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .pill.ok { background: var(--ok-suave); color: var(--ok); }
+  .pill.nao { background: var(--bg); color: var(--sub); }
+  .pill.risco { background: var(--risco-suave); color: var(--risco); }
+  .barra { position: relative; height: 6px; background: var(--linha); border-radius: 3px; min-width: 70px; margin-top: 3px; }
+  .barra i { position: absolute; inset: 0 auto 0 0; background: var(--cor); border-radius: 3px; }
+  .barra s { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--sub); }
+  .delta { color: var(--ok); font-size: 11px; }
+  .sub { color: var(--sub); font-size: 12px; }
+  td.detalhe { background: var(--bg); text-align: left; white-space: normal; padding: 12px; }
+  .detalhe h3 { font-size: 14px; margin: 4px 0 8px; }
+  .detalhe table { background: var(--card); border-radius: 8px; margin-bottom: 12px; }
+  .grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  #feed { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow: auto; }
+  #feed li { padding: 4px 0; border-bottom: 1px solid var(--linha); font-size: 13px; }
+  #feed time { color: var(--sub); margin-right: 6px; font-variant-numeric: tabular-nums; }
+  details { margin-top: 16px; }
+  summary { cursor: pointer; font-weight: 600; }
+  footer { color: var(--sub); font-size: 12px; margin-top: 16px; }
+  a { color: inherit; }
+  @media (max-width: 640px) {
+    #principal > thead > tr > th:nth-child(3), #principal > thead > tr > th:nth-child(4),
+    #principal > tbody > tr.uf > td:nth-child(3), #principal > tbody > tr.uf > td:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="topo">
+    <div>
+      <h1><span id="nome-partido">Missão</span> · Deputados 2026</h1>
+      <div id="status">carregando…</div>
+    </div>
+    <div class="abas" role="group" aria-label="Cargo">
+      <button data-cargo="fed" aria-pressed="true">Dep. Federal</button>
+      <button data-cargo="est" aria-pressed="false">Dep. Estadual</button>
+      <button class="btn" id="notif" title="Avisar no navegador quando alguém entrar ou sair">🔔</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div id="aviso"></div>
+  <div class="cards" id="cards"></div>
+  <div class="tabela"><table id="principal">
+    <thead><tr>
+      <th>UF</th><th>Apurado</th><th>Vagas</th><th>QE</th><th>Votos do partido</th>
+      <th>Cadeiras agora</th><th>Faltam p/ +1 cadeira</th><th class="esq">Eleitos agora</th>
+    </tr></thead>
+    <tbody id="linhas"></tbody>
+  </table></div>
+  <details open>
+    <summary>Mudanças (quem entrou / saiu)</summary>
+    <ul id="feed"></ul>
+  </details>
+  <footer>
+    Projeção “se a apuração acabasse agora”, calculada no seu navegador com os arquivos públicos do
+    <a href="https://resultados.tse.jus.br/oficial/app/index.html" target="_blank" rel="noopener">TSE</a>:
+    quociente eleitoral, quociente partidário (10% do QE), sobras pela maior média (80% / 20% do QE) e 3ª fase
+    aberta a todos (STF, 2024). Partido em federação conta a federação inteira. “Faltam p/ +1” = votos a mais no
+    candidato não eleito mais votado do partido, com o resto parado. Clique numa UF para detalhes.
+  </footer>
+</main>
+<script src="calculo.js"></script>
+<script>
+'use strict';
+const params = new URLSearchParams(location.search);
+const DEMO = params.has('demo');
+const BASE = (params.get('base') || 'https://resultados.tse.jus.br/oficial').replace(/\/$/, '');
+const CICLO = 'ele2026';
+const ALVO = semAcento(params.get('partido') || 'MISSAO').toUpperCase(); // sigla, nome ou número
+const INTERVALO = Math.max(10, Number(params.get('s')) || (DEMO ? 10 : 25)) * 1000;
+const PARALELO = 8;
+
+const UFS = { ac: 'Acre', al: 'Alagoas', am: 'Amazonas', ap: 'Amapá', ba: 'Bahia', ce: 'Ceará', df: 'Distrito Federal',
+  es: 'Espírito Santo', go: 'Goiás', ma: 'Maranhão', mg: 'Minas Gerais', ms: 'Mato Grosso do Sul', mt: 'Mato Grosso',
+  pa: 'Pará', pb: 'Paraíba', pe: 'Pernambuco', pi: 'Piauí', pr: 'Paraná', rj: 'Rio de Janeiro', rn: 'Rio Grande do Norte',
+  ro: 'Rondônia', rr: 'Roraima', rs: 'Rio Grande do Sul', sc: 'Santa Catarina', se: 'Sergipe', sp: 'São Paulo', to: 'Tocantins' };
+const CARGOS = { fed: { nome: 'Dep. Federal', cod: () => 6 }, est: { nome: 'Dep. Estadual', cod: (uf) => (uf === 'df' ? 8 : 7) } };
+
+const fmt = new Intl.NumberFormat('pt-BR');
+const fmt1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+const int = (v) => { const n = parseInt(String(v ?? '').replace(/\D/g, ''), 10); return Number.isFinite(n) ? n : 0; };
+const dec = (v) => { const n = parseFloat(String(v ?? '').replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+function semAcento(s) { return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+const norm = (s) => semAcento(s).toUpperCase().trim();
+const lerLocal = (k, p) => { try { return localStorage.getItem(k) ?? p; } catch { return p; } };
+const gravarLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* sem storage */ } };
+
+const estado = { fed: {}, est: {} };        // estado[cargo][uf] = análise
+const versoes = {};                          // `${cargo}-${uf}` -> idg/hora do arquivo (evita recalcular)
+const eleitosAntes = {};                     // `${cargo}-${uf}` -> Set de nomes
+let cargoAtivo = lerLocal('cargo', 'fed') === 'est' ? 'est' : 'fed';
+let abertos = new Set(JSON.parse(lerLocal('abertos', '[]')));
+let eleicao = params.get('ele') || '6259';   // Eleições Gerais Estaduais 2026, 1º turno
+let proximaEm = 0;
+let ultimoErro = '';
+
+/* ---------- leitura do arquivo do TSE (formato "-u.json") ---------- */
+
+function ehAlvo(par) {
+  return norm(par.sg) === ALVO || norm(par.n) === ALVO || norm(par.nm).includes(ALVO);
+}
+
+function analisar(raw, uf) {
+  const carg = (raw.carg || [])[0] || {};
+  const vagas = int(carg.nv);
+  const unidades = [];
+  const nomesUnidade = {};
+  let alvoUnidade = null;
+  let siglaAlvo = '';
+  let alvoVotos = 0;
+  const candAlvo = [];
+  const todosCand = new Map();
+  for (const agr of carg.agr || []) {
+    let votos = 0;
+    const candidatos = [];
+    for (const par of agr.par || []) {
+      let nominal = 0;
+      const doAlvo = ehAlvo(par);
+      for (const c of par.cand || []) {
+        const apto = !c.dvt || /^v[aá]lido$/i.test(String(c.dvt).trim());
+        const cand = { id: String(c.sqcand || c.n), votos: int(c.vap), nascimento: c.dt, apto,
+          nome: c.nmu || c.nm, numero: c.n, partido: par.sg, dvt: c.dvt || '', stTse: c.st || '' };
+        if (/^v[aá]lido/i.test(String(c.dvt || 'Válido'))) nominal += cand.votos;
+        candidatos.push(cand);
+        todosCand.set(cand.id, cand);
+        if (doAlvo) candAlvo.push(cand);
+      }
+      if (par.tvtn != null && par.tvtn !== '') nominal = int(par.tvtn);
+      const total = nominal + int(par.tvtl ?? par.tval);
+      votos += total;
+      if (doAlvo) { alvoUnidade = String(agr.n); siglaAlvo = par.sg; alvoVotos += total; }
+    }
+    const id = String(agr.n);
+    nomesUnidade[id] = agr.tp === 'f' ? (agr.com || agr.nm) : (agr.par || []).map((p) => p.sg).join('/');
+    unidades.push({ id, votos, candidatos });
+  }
+  const somaUnidades = unidades.reduce((s, u) => s + u.votos, 0);
+  const vv = int((raw.v || {}).vv);
+  const validos = vv || somaUnidades;
+  const entrada = { vagas, validos, unidades };
+  const calc = Calculo.distribuir(entrada);
+
+  const r = {
+    uf, vagas, validos, qe: calc.qe, qeTse: int(carg.qe), final: raw.tf === 's',
+    pst: dec((raw.s || {}).pst), hora: [raw.dg, raw.hg].filter(Boolean).join(' '),
+    legendaSemPartido: vv > somaUnidades ? vv - somaUnidades : 0,
+    temAlvo: !!alvoUnidade, siglaAlvo, alvoVotos, unidadeVotos: 0, nomeUnidade: '', federado: false,
+    vagasAlvo: 0, candidatos: [], faltam: null, quemRecebe: null, corte: null, partidos: [],
+  };
+  // nota de corte: menor votação entre os eleitos do estado
+  for (const [id] of calc.eleitos) {
+    const c = todosCand.get(id);
+    if (c && (!r.corte || c.votos < r.corte.votos)) r.corte = c;
+  }
+  r.partidos = unidades.map((u) => ({
+    nome: nomesUnidade[u.id], votos: u.votos, qp: calc.qe ? Math.floor(u.votos / calc.qe) : 0,
+    vagas: calc.vagasPorUnidade.get(u.id) || 0, alvo: u.id === alvoUnidade,
+  })).sort((a, b) => b.vagas - a.vagas || b.votos - a.votos);
+  if (!alvoUnidade) return r;
+
+  const u = unidades.find((x) => x.id === alvoUnidade);
+  r.unidadeVotos = u.votos;
+  r.nomeUnidade = nomesUnidade[alvoUnidade];
+  r.federado = u.votos !== alvoVotos || r.nomeUnidade !== siglaAlvo;
+  r.vagasAlvo = calc.vagasPorUnidade.get(alvoUnidade) || 0;
+  r.candidatos = candAlvo
+    .map((c) => ({ ...c, eleito: calc.eleitos.get(c.id) || '' }))
+    .sort((a, b) => b.votos - a.votos);
+  const prox = r.candidatos.find((c) => c.apto && !c.eleito);
+  if (prox && calc.qe) {
+    r.faltam = Calculo.votosParaProximaCadeira(entrada, alvoUnidade, prox.id);
+    r.quemRecebe = prox;
+  }
+  return r;
+}
+
+/* ---------- busca ---------- */
+
+const url = (cargo, uf) => {
+  const c = String(CARGOS[cargo].cod(uf)).padStart(4, '0');
+  return `${BASE}/${CICLO}/${eleicao}/dados/${uf}/${uf}-c${c}-e${String(eleicao).padStart(6, '0')}-u.json`;
+};
+
+async function descobrirEleicao() {
+  if (params.get('ele') || DEMO) return;
+  try {
+    const r = await fetch(`${BASE}/comum/config/ele-c.json`, { cache: 'no-cache' });
+    const cfg = await r.json();
+    for (const pl of cfg.pl || []) {
+      if (pl.c !== CICLO) continue;
+      const e = (pl.e || []).find((x) => String(x.t) === '1' && String(x.tp) === '1');
+      if (e) eleicao = String(e.cd);
+    }
+  } catch { /* fica com o padrão */ }
+}
+
+async function buscarJson(cargo, uf) {
+  if (DEMO) return demo(cargo, uf);
+  const res = await fetch(url(cargo, uf), { cache: 'no-cache' });
+  if (res.status === 404 || res.status === 403) return null;
+  if (!res.ok) throw new Error(`TSE respondeu ${res.status}`);
+  return res.json();
+}
+
+async function atualizar() {
+  const tarefas = [];
+  // cargo da aba aberta primeiro
+  for (const cargo of [cargoAtivo, cargoAtivo === 'fed' ? 'est' : 'fed'])
+    for (const uf of Object.keys(UFS)) if (!(estado[cargo][uf] && estado[cargo][uf].final)) tarefas.push([cargo, uf]);
+  let falhas = 0;
+  let i = 0;
+  const trabalhador = async () => {
+    while (i < tarefas.length) {
+      const [cargo, uf] = tarefas[i++];
+      try {
+        const raw = await buscarJson(cargo, uf);
+        if (!raw) continue;
+        const chave = `${cargo}-${uf}`;
+        const versao = raw.idg || `${raw.dg} ${raw.hg} ${(raw.s || {}).st}`;
+        if (versoes[chave] === versao) continue;
+        versoes[chave] = versao;
+        const antes = estado[cargo][uf];
+        const r = analisar(raw, uf);
+        r.delta = antes ? r.alvoVotos - antes.alvoVotos : 0;
+        estado[cargo][uf] = r;
+        registrarMudancas(cargo, uf, r);
+      } catch (e) {
+        falhas += 1;
+        ultimoErro = e.message || String(e);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: PARALELO }, trabalhador));
+  if (!falhas) ultimoErro = '';
+  else if (falhas === tarefas.length) ultimoErro = `Sem conexão com o TSE (${ultimoErro}). Tentando de novo…`;
+  else ultimoErro = `${falhas} arquivo(s) falharam nesta rodada; tentando de novo.`;
+  desenhar();
+}
+
+/* ---------- avisos de mudança ---------- */
+
+function registrarMudancas(cargo, uf, r) {
+  const chave = `${cargo}-${uf}`;
+  const agora = new Set(r.candidatos.filter((c) => c.eleito).map((c) => c.nome));
+  const antes = eleitosAntes[chave];
+  eleitosAntes[chave] = agora;
+  if (!antes) return; // primeira leitura: sem alarde
+  const rot = `${uf.toUpperCase()} · ${CARGOS[cargo].nome}`;
+  for (const n of agora) if (!antes.has(n)) avisar(`✅ ${rot}: ${n} entrou (${r.candidatos.find((c) => c.nome === n).eleito})`);
+  for (const n of antes) if (!agora.has(n)) avisar(`⚠️ ${rot}: ${n} saiu da zona de eleitos`);
+}
+
+function avisar(texto) {
+  const li = document.createElement('li');
+  li.innerHTML = `<time>${new Date().toLocaleTimeString('pt-BR')}</time>${esc(texto)}`;
+  document.getElementById('feed').prepend(li);
+  try {
+    if (window.Notification && Notification.permission === 'granted') new Notification('Apuração', { body: texto });
+  } catch { /* alguns navegadores não deixam */ }
+}
+
+/* ---------- tela ---------- */
+
+function desenhar() {
+  const dados = estado[cargoAtivo];
+  const ufs = Object.keys(UFS).filter((uf) => dados[uf]);
+  const nome = Object.values(estado.fed).concat(Object.values(estado.est)).find((r) => r.siglaAlvo)?.siglaAlvo;
+  if (nome) document.getElementById('nome-partido').textContent = nome;
+
+  const total = (c) => Object.values(estado[c]).reduce((s, r) => s + r.vagasAlvo, 0);
+  const votos = ufs.reduce((s, uf) => s + dados[uf].alvoVotos, 0);
+  const pst = ufs.length ? ufs.reduce((s, uf) => s + dados[uf].pst, 0) / ufs.length : 0;
+  document.getElementById('cards').innerHTML = `
+    <div class="card"><small>Dep. Federal eleitos agora</small><b>${total('fed')}</b></div>
+    <div class="card"><small>Dep. Estadual eleitos agora</small><b>${total('est')}</b></div>
+    <div class="card"><small>Votos ${esc(nome || 'do partido')} · ${CARGOS[cargoAtivo].nome}</small><b>${fmt.format(votos)}</b></div>
+    <div class="card"><small>Apuração média das UFs</small><b>${fmt1.format(pst)}%</b></div>`;
+
+  const avisos = [];
+  if (DEMO) avisos.push('Modo demonstração: dados <b>fictícios</b>.');
+  if (!ufs.length) avisos.push('Aguardando o TSE publicar os arquivos (só saem depois das 17h de Brasília).');
+  else if (!ufs.some((uf) => dados[uf].temAlvo)) avisos.push(`Não achei o partido “${esc(ALVO)}” nos arquivos. Use <code>?partido=SIGLA</code> na URL.`);
+  if (ufs.some((uf) => dados[uf].legendaSemPartido > 0)) avisos.push('Atenção: o TSE não discriminou parte dos votos de legenda por partido; a projeção pode ficar um pouco imprecisa.');
+  document.getElementById('aviso').innerHTML = avisos.map((a) => `<div class="aviso">${a}</div>`).join('');
+
+  ufs.sort((a, b) => {
+    const x = dados[a], y = dados[b];
+    return y.vagasAlvo - x.vagasAlvo || (x.faltam ?? Infinity) - (y.faltam ?? Infinity) || a.localeCompare(b);
+  });
+  document.getElementById('linhas').innerHTML = ufs.map((uf) => linha(dados[uf])).join('');
+}
+
+function linha(r) {
+  const aberto = abertos.has(r.uf);
+  const eleitos = r.candidatos.filter((c) => c.eleito);
+  const pctQe = r.qe ? (100 * r.unidadeVotos) / r.qe : 0;
+  // escala da barra: até 2 QEs (marca em 80% e 100%)
+  const largura = Math.min(100, pctQe / 2);
+  const votosCel = !r.temAlvo ? '<span class="sub">sem candidatos</span>' : `
+    ${fmt.format(r.alvoVotos)} ${r.delta > 0 ? `<span class="delta">+${fmt.format(r.delta)}</span>` : ''}
+    <div class="sub">${fmt1.format(pctQe)}% do QE${r.federado ? ` (federação ${esc(r.nomeUnidade)}: ${fmt.format(r.unidadeVotos)})` : ''}</div>
+    <div class="barra" title="80% e 100% do QE"><i style="width:${largura}%"></i><s style="left:40%"></s><s style="left:50%"></s></div>`;
+  const faltam = r.faltam == null ? '<span class="sub">—</span>'
+    : `${fmt.format(r.faltam)}<div class="sub">p/ ${esc(r.quemRecebe.nome)}</div>`;
+  return `
+  <tr class="uf ${r.vagasAlvo ? 'tem' : ''}" data-uf="${r.uf}">
+    <td><b>${r.uf.toUpperCase()}</b> ${aberto ? '▾' : '▸'}<div class="sub">${esc(UFS[r.uf])}</div></td>
+    <td>${fmt1.format(r.pst)}%${r.final ? '<div class="sub">final</div>' : ''}</td>
+    <td>${r.vagas}</td>
+    <td>${fmt.format(r.qe)}</td>
+    <td>${votosCel}</td>
+    <td>${r.vagasAlvo ? `<span class="pill ok">${r.vagasAlvo}</span>` : '<span class="pill nao">0</span>'}</td>
+    <td>${faltam}</td>
+    <td class="nomes">${eleitos.map((c) => `${esc(c.nome)} <span class="sub">(${fmt.format(c.votos)} · ${c.eleito})</span>`).join('<br>') || '<span class="sub">—</span>'}</td>
+  </tr>
+  ${aberto ? `<tr><td colspan="8" class="detalhe">${detalhe(r)}</td></tr>` : ''}`;
+}
+
+function detalhe(r) {
+  const cands = r.candidatos.map((c) => `
+    <tr><td>${esc(c.nome)} <span class="sub">${esc(c.numero)}</span></td>
+      <td>${fmt.format(c.votos)}</td>
+      <td>${r.qe ? fmt1.format((100 * c.votos) / r.qe) + '%' : '—'}</td>
+      <td>${c.eleito ? `<span class="pill ok">Eleito (${c.eleito})</span>` : !c.apto ? `<span class="pill risco">${esc(c.dvt)}</span>` : '<span class="pill nao">Suplente</span>'}</td>
+      <td class="sub">${esc(c.stTse)}</td></tr>`).join('');
+  const partidos = r.partidos.filter((p) => p.votos > 0).map((p) => `
+    <tr${p.alvo ? ' style="font-weight:700"' : ''}><td>${esc(p.nome)}</td><td>${fmt.format(p.votos)}</td><td>${p.qp}</td><td>${p.vagas}</td></tr>`).join('');
+  return `
+    <p class="sub">Válidos: ${fmt.format(r.validos)} · QE ${fmt.format(r.qe)}${r.qeTse ? ` (TSE informa ${fmt.format(r.qeTse)})` : ''}
+      · 10% QE = ${fmt.format(Math.ceil(r.qe * 0.1))} · 20% QE = ${fmt.format(Math.ceil(r.qe * 0.2))} · 80% QE = ${fmt.format(Math.ceil(r.qe * 0.8))}
+      ${r.corte ? `· nota de corte: ${esc(r.corte.nome)} (${esc(r.corte.partido)}) com ${fmt.format(r.corte.votos)}` : ''}
+      · arquivo do TSE: ${esc(r.hora)}</p>
+    <div class="grade">
+      <div><h3>Candidatos ${esc(r.siglaAlvo)}</h3>
+        <div class="tabela"><table><thead><tr><th>Nome</th><th>Votos</th><th>% QE</th><th class="esq">Agora</th><th class="esq">TSE</th></tr></thead>
+        <tbody>${cands || '<tr><td colspan="5">Sem candidatos</td></tr>'}</tbody></table></div></div>
+      <div><h3>Cadeiras por partido/federação (projeção)</h3>
+        <div class="tabela"><table><thead><tr><th>Partido</th><th>Votos</th><th>QP</th><th>Vagas</th></tr></thead>
+        <tbody>${partidos}</tbody></table></div></div>
+    </div>`;
+}
+
+function relogio() {
+  const s = Math.max(0, Math.ceil((proximaEm - Date.now()) / 1000));
+  const horas = Object.values(estado[cargoAtivo]).map((r) => r.hora).sort().pop();
+  const el = document.getElementById('status');
+  el.className = ultimoErro ? 'erro' : '';
+  el.textContent = ultimoErro || `${horas ? `TSE: ${horas} · ` : ''}próxima atualização em ${s}s · eleição ${eleicao}`;
+}
+
+document.querySelector('.abas').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button[data-cargo]');
+  if (!b) return;
+  cargoAtivo = b.dataset.cargo;
+  gravarLocal('cargo', cargoAtivo);
+  document.querySelectorAll('[data-cargo]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  desenhar();
+});
+document.querySelectorAll('[data-cargo]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.cargo === cargoAtivo)));
+document.getElementById('linhas').addEventListener('click', (ev) => {
+  const tr = ev.target.closest('tr.uf');
+  if (!tr) return;
+  const uf = tr.dataset.uf;
+  abertos.has(uf) ? abertos.delete(uf) : abertos.add(uf);
+  gravarLocal('abertos', JSON.stringify([...abertos]));
+  desenhar();
+});
+document.getElementById('notif').addEventListener('click', async () => {
+  if (!window.Notification) return alert('Este navegador não suporta notificações.');
+  const p = await Notification.requestPermission();
+  avisar(p === 'granted' ? 'Notificações ligadas.' : 'Notificações não autorizadas.');
+});
+
+async function ciclo() {
+  try { await atualizar(); } catch (e) { ultimoErro = e.message; }
+  proximaEm = Date.now() + INTERVALO;
+  setTimeout(ciclo, INTERVALO);
+}
+setInterval(relogio, 1000);
+descobrirEleicao().then(ciclo);
+
+/* ---------- modo demonstração (?demo=1): gera arquivos no formato do TSE ---------- */
+
+const VAGAS_FED = { sp: 70, mg: 53, rj: 46, ba: 39, rs: 31, pr: 30, pe: 25, ce: 22, ma: 18, go: 17, pa: 17, sc: 16, pb: 12,
+  es: 10, pi: 10, al: 9 };
+const inicioDemo = Date.now();
+function demo(cargo, uf) {
+  let semente = [...(cargo + uf)].reduce((s, ch) => s * 31 + ch.charCodeAt(0), 7) >>> 0;
+  const rnd = () => ((semente = (semente * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  const fed = VAGAS_FED[uf] || 8;
+  const vagas = cargo === 'fed' ? fed : fed <= 12 ? fed * 3 : 36 + fed - 12;
+  const progresso = Math.min(1, 0.15 + (Date.now() - inicioDemo) / 300000);
+  const eleitores = fed * 400000;
+  const pesos = { PL: 18, PT: 16, 'UNIÃO': 9, PSD: 9, MDB: 8, PP: 7, REPUBLICANOS: 7, PSB: 5, PDT: 4, PSDB: 3, NOVO: 3, PSOL: 4, 'MISSÃO': 2 + rnd() * 5, AVANTE: 2, PODE: 2 };
+  const somaPesos = Object.values(pesos).reduce((a, b) => a + b, 0);
+  const agr = Object.entries(pesos).map(([sg, peso], i) => {
+    const total = eleitores * 0.8 * (peso / somaPesos) * progresso;
+    const cand = [];
+    let resto = total * 0.93;
+    const n = Math.min(vagas + 1, 30);
+    for (let k = 0; k < n; k++) {
+      const parte = k === n - 1 ? resto : resto * (0.12 + rnd() * 0.25);
+      resto -= parte;
+      cand.push({ n: `${10 + i}${String(k + 1).padStart(2, '0')}`, sqcand: `${uf}${cargo}${i}-${k}`,
+        nmu: sg === 'MISSÃO' ? `CANDIDATO MISSÃO ${k + 1}` : `${sg} ${k + 1}`, dt: '01/01/1980', dvt: 'Válido', st: '',
+        vap: String(Math.round(parte * (0.9 + 0.2 * Math.sin(Date.now() / 20000 + k + i)))) });
+    }
+    const nominal = cand.reduce((s, c) => s + int(c.vap), 0);
+    return { n: String(i + 1), nm: sg, tp: 'i', par: [{ n: String(10 + i), sg, nm: sg, tvtn: String(nominal), tvtl: String(Math.round(total * 0.07)), cand }] };
+  });
+  const vv = agr.reduce((s, a) => s + int(a.par[0].tvtn) + int(a.par[0].tvtl), 0);
+  const agora = new Date();
+  return { tf: progresso >= 1 ? 's' : 'n', dg: agora.toLocaleDateString('pt-BR'), hg: agora.toLocaleTimeString('pt-BR'),
+    s: { pst: (progresso * 100).toFixed(2).replace('.', ',') }, v: { vv: String(vv) },
+    carg: [{ cd: String(CARGOS[cargo].cod(uf)), nv: String(vagas), agr }] };
+}
+</script>
+</body>
+</html>
