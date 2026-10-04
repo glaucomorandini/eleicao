@@ -43,7 +43,8 @@
   th:first-child, td:first-child, .esq { text-align: left; }
   tr.uf { cursor: pointer; }
   tr.uf:hover { background: var(--bg); }
-  tr.uf.tem { background: var(--ok-suave); }
+  tr.uf.tem, tr.eleito > td { background: var(--ok-suave); }
+  tr.eleito > td:first-child { box-shadow: inset 3px 0 0 var(--ok); font-weight: 600; }
   .nomes { white-space: normal; text-align: left; min-width: 180px; }
   .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
   .pill.ok { background: var(--ok-suave); color: var(--ok); }
@@ -367,7 +368,7 @@ function linha(r) {
 
 function detalhe(r) {
   const cands = r.candidatos.map((c) => `
-    <tr><td>${esc(c.nome)} <span class="sub">${esc(c.numero)}</span></td>
+    <tr${c.eleito ? ' class="eleito"' : ''}><td>${esc(c.nome)} <span class="sub">${esc(c.numero)}</span></td>
       <td>${fmt.format(c.votos)}</td>
       <td>${r.qe ? fmt1.format((100 * c.votos) / r.qe) + '%' : '—'}</td>
       <td>${c.eleito ? `<span class="pill ok">Eleito (${c.eleito})</span>` : !c.apto ? `<span class="pill risco">${esc(c.dvt)}</span>` : '<span class="pill nao">Suplente</span>'}</td>
