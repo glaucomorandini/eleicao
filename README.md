@@ -13,6 +13,8 @@ deputado federal e estadual/distrital nas 27 UFs, direto dos arquivos públicos 
 
 ## Presidente · 2º turno (`presidente.html`)
 
+O `index.html` abre direto nesta página. A página de deputados continua em `deputados.html`.
+
 Página separada para o 2º turno de presidente: Brasil no topo (percentual, votos, vantagem, seções apuradas) e um
 cartão por estado (mais o exterior) com o percentual de cada candidato no 1º turno ao lado do 2º turno, a diferença
 em pontos e quem lidera. Ordena por eleitorado, UF, vantagem de cada candidato ou menos apurado.
@@ -21,7 +23,7 @@ Usa os arquivos do TSE das eleições 6257 (1º turno) e 6258 (2º turno), desco
 
 ## Como usar
 
-Abra o `index.html` no navegador (o TSE libera CORS, então funciona até direto do arquivo). Ou sirva a pasta:
+Abra o `index.html` (presidente) ou o `deputados.html` no navegador (o TSE libera CORS, então funciona até direto do arquivo). Ou sirva a pasta:
 
 ```bash
 python3 -m http.server 8000   # http://localhost:8000

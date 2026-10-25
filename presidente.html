@@ -80,7 +80,6 @@
       <h1><span>Presidente</span> · 2º turno 2026</h1>
       <div id="status">carregando…</div>
     </div>
-    <a class="btn" href="index.html">Deputados →</a>
   </div>
 </header>
 <main>
@@ -245,6 +244,9 @@ function candidatos() {
   return lista.slice(0, 2).map((c, i) => ({ n: c.n, nome: c.nome, partido: c.partido, cor: CORES_PARTIDO[c.partido] || CORES_PADRAO[i] }));
 }
 
+// Diferença entre os dois no 2º turno, em pontos percentuais dos válidos (sempre positiva, do líder).
+const margemPct = (leitura, cs) => Math.abs((pctDe(leitura, cs[0].n) ?? 0) - (pctDe(leitura, cs[1].n) ?? 0));
+
 const pctDe = (leitura, n) => (leitura && leitura.cands[n] ? leitura.cands[n].pct : null);
 
 function delta(p1, p2) {
@@ -288,7 +290,7 @@ function desenhar() {
         </div>`;
       }).join('')}</div>
       ${total ? `<div class="split" title="Divisão dos votos válidos">${cs.map((c) => `<i style="width:${(100 * vot(c)) / total}%;background:${c.cor}"></i>`).join('')}<s></s></div>` : ''}
-      ${lider ? `<div class="sub num"><b style="color:${lider.cor}">${esc(lider.nome)}</b> à frente por <b>${fmt.format(dif)}</b> votos
+      ${lider ? `<div class="sub num"><b style="color:${lider.cor}">${esc(lider.nome)}</b> à frente por <b>${fmt.format(dif)}</b> votos (<b>+${fmt2.format(margemPct(br2, cs))}%</b>)
         ${br2.comparecimento != null ? ` · comparecimento ${fmt2.format(br2.comparecimento)}%` : ''} · brancos ${fmt.format(br2.brancos)} · nulos ${fmt.format(br2.nulos)}</div>` : ''}`;
   }
 
@@ -334,7 +336,7 @@ function cartaoUf(uf, cs) {
         <div class="barras"><i class="b1" style="width:${p1 ?? 0}%"></i><i class="b2" style="width:${p2 ?? 0}%"></i></div>
       </div>`;
     }).join('')}
-    <div class="sub num" style="margin-top:6px">${lider ? `<b style="color:${lider.cor}">${esc(lider.nome)}</b> +${fmt.format(dif)} votos` : '&nbsp;'}</div>
+    <div class="sub num" style="margin-top:6px">${lider ? `<b style="color:${lider.cor}">${esc(lider.nome)}</b> +${fmt.format(dif)} votos · <b>+${fmt1.format(margemPct(d2, cs))}%</b>` : '&nbsp;'}</div>
   </div>`;
 }
 
