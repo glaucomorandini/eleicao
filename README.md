@@ -11,6 +11,14 @@ deputado federal e estadual/distrital nas 27 UFs, direto dos arquivos públicos 
   nota de corte do estado e a distribuição de cadeiras de todos os partidos/federações.
 - Lista de mudanças ("fulano entrou / saiu") e notificação no navegador (botão 🔔).
 
+## Presidente · 2º turno (`presidente.html`)
+
+Página separada para o 2º turno de presidente: Brasil no topo (percentual, votos, vantagem, seções apuradas) e um
+cartão por estado (mais o exterior) com o percentual de cada candidato no 1º turno ao lado do 2º turno, a diferença
+em pontos e quem lidera. Ordena por eleitorado, UF, vantagem de cada candidato ou menos apurado.
+Usa os arquivos do TSE das eleições 6257 (1º turno) e 6258 (2º turno), descobertos no `ele-c.json`
+(`?ele1=` / `?ele2=` forçam outros códigos; `?demo=1` mostra dados fictícios).
+
 ## Como usar
 
 Abra o `index.html` no navegador (o TSE libera CORS, então funciona até direto do arquivo). Ou sirva a pasta:
