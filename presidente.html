@@ -97,12 +97,12 @@
       </select>
     </label>
   </div>
-  <div class="legenda"><span><i style="height:3px;background:var(--b1)"></i>1º turno</span><span><i style="height:6px;background:var(--sub)"></i>2º turno (agora)</span></div>
+  <div class="legenda"><span><i style="height:3px;background:var(--b1)"></i>1º turno (só entre os dois)</span><span><i style="height:6px;background:var(--sub)"></i>2º turno (agora)</span></div>
   <div id="ufs"></div>
   <footer>
     Dados direto dos arquivos públicos do <a href="https://resultados.tse.jus.br/oficial/app/index.html" target="_blank" rel="noopener">TSE</a>,
-    atualizados a cada 25 s. Percentuais sobre os votos válidos. O 1º turno mostra o resultado final de cada candidato
-    naquele estado; a diferença (+/−) é em pontos percentuais.
+    atualizados a cada 25 s. Percentuais sobre os votos válidos. O 1º turno é recalculado só entre os dois finalistas
+    (votos dele ÷ votos dos dois), para comparar com o 2º turno; a diferença (+/−) é em pontos percentuais.
   </footer>
 </main>
 <script>
@@ -247,6 +247,16 @@ function candidatos() {
 // Diferença entre os dois no 2º turno, em pontos percentuais dos válidos (sempre positiva, do líder).
 const margemPct = (leitura, cs) => Math.abs((pctDe(leitura, cs[0].n) ?? 0) - (pctDe(leitura, cs[1].n) ?? 0));
 
+// 1º turno só entre os dois finalistas: votos dele ÷ (votos dos dois). Assim a diferença para o 2º turno
+// mostra quem ganhou ou perdeu terreno de fato, e não só a herança dos votos dos outros candidatos.
+function pct1(leitura, cs, n) {
+  if (!leitura || cs.length < 2) return null;
+  const a = leitura.cands[cs[0].n]?.votos;
+  const b = leitura.cands[cs[1].n]?.votos;
+  if (a == null || b == null || a + b === 0) return null;
+  return (100 * leitura.cands[n].votos) / (a + b);
+}
+
 const pctDe = (leitura, n) => (leitura && leitura.cands[n] ? leitura.cands[n].pct : null);
 
 function delta(p1, p2) {
@@ -280,13 +290,13 @@ function desenhar() {
       </div>
       <div class="duelo">${cs.map((c) => {
         const p2 = pctDe(br2, c.n);
-        const p1 = pctDe(br1, c.n);
+        const p1 = pct1(br1, cs, c.n);
         const eleito = br2?.cands[c.n]?.eleito;
         return `<div class="cand-br" style="--c:${c.cor}">
           <div class="nome">${esc(c.nome)} <span class="sub">${esc(c.partido)}</span> ${eleito ? '<span class="selo">ELEITO</span>' : ''}</div>
           <div class="pct num">${p2 != null ? fmt2.format(p2) + '%' : '—'}</div>
           <div class="sub num">${br2 ? fmt.format(vot(c)) + ' votos' : ''}</div>
-          <div class="sub num">1º turno: ${p1 != null ? fmt2.format(p1) + '%' : '—'} ${delta(p1, p2)}</div>
+          <div class="sub num">1º turno (só os dois): ${p1 != null ? fmt2.format(p1) + '%' : '—'} ${delta(p1, p2)}</div>
         </div>`;
       }).join('')}</div>
       ${total ? `<div class="split" title="Divisão dos votos válidos">${cs.map((c) => `<i style="width:${(100 * vot(c)) / total}%;background:${c.cor}"></i>`).join('')}<s></s></div>` : ''}
@@ -327,7 +337,7 @@ function cartaoUf(uf, cs) {
     <div class="cab"><span><b>${uf.toUpperCase()}</b> <span class="sub">${esc(UFS[uf])}</span></span>
       <span class="sub num">${d2 ? `${fmt1.format(d2.pst)}% apurado` : 'sem 2º turno ainda'}</span></div>
     ${cs.map((c) => {
-      const p1 = pctDe(d1, c.n);
+      const p1 = pct1(d1, cs, c.n);
       const p2 = pctDe(d2, c.n);
       return `<div class="linha" style="--c:${c.cor}">
         <span class="nome">${esc(c.nome)}</span>
