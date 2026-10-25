@@ -101,13 +101,14 @@
       </select>
     </label>
   </div>
-  <div class="legenda"><span><i style="height:3px;background:var(--b1)"></i>1º turno (só entre os dois)</span><span><i style="height:6px;background:var(--sub)"></i>2º turno (agora)</span></div>
+  <div class="legenda"><span><i style="height:3px;background:var(--b1)"></i>1º turno</span><span><i style="height:6px;background:var(--sub)"></i>2º turno (agora)</span></div>
   <div id="ufs"></div>
   <section class="card" id="resumo" hidden></section>
   <footer>
     Dados direto dos arquivos públicos do <a href="https://resultados.tse.jus.br/oficial/app/index.html" target="_blank" rel="noopener">TSE</a>,
-    atualizados a cada 25 s. Percentuais sobre os votos válidos. O 1º turno é recalculado só entre os dois finalistas
-    (votos dele ÷ votos dos dois), para comparar com o 2º turno; a diferença (+/−) é em pontos percentuais.
+    atualizados a cada 25 s. Percentuais sobre os votos válidos. Ao lado de cada candidato, o 1º turno e quanto
+    ele cresceu desde então (em pontos percentuais). “Avanço sobre o 1º turno” recalcula o 1º turno só entre os dois
+    finalistas (votos dele ÷ votos dos dois) e mostra quem ganhou terreno de fato e quanto.
   </footer>
 </main>
 <script>
@@ -264,6 +265,19 @@ function pct1(leitura, cs, n) {
 
 const pctDe = (leitura, n) => (leitura && leitura.cands[n] ? leitura.cands[n].pct : null);
 
+// Avanço sobre o 1º turno (1º turno só entre os dois): é igual e oposto para os dois, então mostra um número só,
+// com o nome de quem avançou.
+function avanco(d1, d2, cs, casas = fmt1) {
+  if (!d2 || cs.length < 2) return '';
+  const p1 = pct1(d1, cs, cs[0].n);
+  const p2 = pctDe(d2, cs[0].n);
+  if (p1 == null || p2 == null) return '';
+  const d = p2 - p1;
+  if (Math.abs(d) < 0.05) return 'Avanço sobre o 1º turno: <b>sem mudança</b>';
+  const c = d > 0 ? cs[0] : cs[1];
+  return `Avanço sobre o 1º turno: <b style="color:${c.cor}">${esc(c.nome)}</b> <b>+${casas.format(Math.abs(d))}%</b>`;
+}
+
 function delta(p1, p2) {
   if (p1 == null || p2 == null) return '';
   const d = p2 - p1;
@@ -295,16 +309,17 @@ function desenhar() {
       </div>
       <div class="duelo">${cs.map((c) => {
         const p2 = pctDe(br2, c.n);
-        const p1 = pct1(br1, cs, c.n);
+        const p1 = pctDe(br1, c.n);
         const eleito = br2?.cands[c.n]?.eleito;
         return `<div class="cand-br" style="--c:${c.cor}">
           <div class="nome">${esc(c.nome)} <span class="sub">${esc(c.partido)}</span> ${eleito ? '<span class="selo">ELEITO</span>' : ''}</div>
           <div class="pct num">${p2 != null ? fmt2.format(p2) + '%' : '—'}</div>
           <div class="sub num">${br2 ? fmt.format(vot(c)) + ' votos' : ''}</div>
-          <div class="sub num">1º turno (só os dois): ${p1 != null ? fmt2.format(p1) + '%' : '—'} ${delta(p1, p2)}</div>
+          <div class="sub num">1º turno: ${p1 != null ? fmt2.format(p1) + '%' : '—'} ${delta(p1, p2)}</div>
         </div>`;
       }).join('')}</div>
       ${total ? `<div class="split" title="Divisão dos votos válidos">${cs.map((c) => `<i style="width:${(100 * vot(c)) / total}%;background:${c.cor}"></i>`).join('')}<s></s></div>` : ''}
+      ${br1 && br2 ? `<div class="num" style="margin-bottom:4px">${avanco(br1, br2, cs, fmt2)}</div>` : ''}
       ${lider ? `<div class="sub num"><b style="color:${lider.cor}">${esc(lider.nome)}</b> à frente por <b>${fmt.format(dif)}</b> votos (<b>+${fmt2.format(margemPct(br2, cs))}%</b>)
         ${br2.comparecimento != null ? ` · comparecimento ${fmt2.format(br2.comparecimento)}%` : ''} · brancos ${fmt.format(br2.brancos)} · nulos ${fmt.format(br2.nulos)}</div>` : ''}`;
   }
@@ -341,7 +356,7 @@ function resumo(cs) {
   const votos = (d, c) => d?.cands[c.n]?.votos || 0;
   const itens = [];
 
-  // Quem lidera e quem está melhor que no 1º turno (1º turno só entre os dois)
+  // Quem lidera e onde cada um avança sobre o 1º turno (1º turno só entre os dois)
   for (const [i, c] of cs.entries()) {
     const outro = cs[1 - i];
     const lidera = estados.filter((uf) => votos(dados[2][uf], c) > votos(dados[2][uf], outro));
@@ -352,7 +367,7 @@ function resumo(cs) {
     const melhor = ganhos.filter((g) => g.d > 0);
     const viradas = lidera.filter((uf) => dados[1][uf] && votos(dados[1][uf], c) <= votos(dados[1][uf], outro));
     itens.push(`${nome(c)} lidera em <b>${lidera.length}</b> de ${estados.length} estados${lidera.length ? ` <span class="sub">(${siglas(lidera)})</span>` : ''}.`);
-    itens.push(`${nome(c)} está melhor que no 1º turno em <b>${melhor.length}</b> de ${comparaveis.length} estados${
+    itens.push(`${nome(c)} avança sobre o 1º turno em <b>${melhor.length}</b> de ${comparaveis.length} estados${
       melhor.length ? `; maiores avanços: ${melhor.slice(0, 3).map((g) => `${g.uf.toUpperCase()} +${fmt1.format(g.d)}`).join(', ')}` : ''}.`);
     if (viradas.length) itens.push(`${nome(c)} virou (perdia no 1º turno e agora lidera) em: <b>${siglas(viradas)}</b>.`);
   }
@@ -363,7 +378,7 @@ function resumo(cs) {
   if (br2 && br1) {
     const [a, b] = cs.map((c) => pctDe(br2, c.n) - (pct1(br1, cs, c.n) ?? 0));
     const quem = a >= b ? cs[0] : cs[1];
-    itens.push(`No Brasil, ${nome(quem)} está ${fmt2.format(Math.max(a, b))} ponto(s) acima do próprio 1º turno (só entre os dois).`);
+    itens.push(`No Brasil, o avanço sobre o 1º turno é de ${nome(quem)}: <b>+${fmt2.format(Math.max(a, b))}%</b>.`);
   }
 
   // Projeção simples: o que falta de cada estado vota como o que já foi apurado nele
@@ -407,7 +422,7 @@ function cartaoUf(uf, cs) {
     <div class="cab"><span><b>${uf.toUpperCase()}</b> <span class="sub">${esc(UFS[uf])}</span></span>
       <span class="sub num">${d2 ? `${fmt1.format(d2.pst)}% apurado` : 'sem 2º turno ainda'}</span></div>
     ${cs.map((c) => {
-      const p1 = pct1(d1, cs, c.n);
+      const p1 = pctDe(d1, c.n);
       const p2 = pctDe(d2, c.n);
       return `<div class="linha" style="--c:${c.cor}">
         <span class="nome">${esc(c.nome)}</span>
@@ -417,6 +432,7 @@ function cartaoUf(uf, cs) {
       </div>`;
     }).join('')}
     <div class="sub num" style="margin-top:6px">${lider ? `<b style="color:${lider.cor}">${esc(lider.nome)}</b> +${fmt.format(dif)} votos · <b>+${fmt1.format(margemPct(d2, cs))}%</b>` : '&nbsp;'}</div>
+    ${d1 && d2 ? `<div class="sub num">${avanco(d1, d2, cs)}</div>` : ''}
   </div>`;
 }
 

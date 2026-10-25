@@ -16,8 +16,9 @@ deputado federal e estadual/distrital nas 27 UFs, direto dos arquivos públicos 
 O `index.html` abre direto nesta página. A página de deputados continua em `deputados.html`.
 
 Página separada para o 2º turno de presidente: Brasil no topo (percentual, votos, vantagem, seções apuradas) e um
-cartão por estado (mais o exterior) com o percentual de cada candidato no 1º turno ao lado do 2º turno, a diferença
-em pontos e quem lidera. Ordena por eleitorado, UF, vantagem de cada candidato ou menos apurado.
+cartão por estado (mais o exterior) com o percentual de cada candidato no 1º turno ao lado do 2º turno, quanto cada
+um cresceu, quem lidera e o "avanço sobre o 1º turno" (1º turno recalculado só entre os dois finalistas: um número só,
+com o nome de quem ganhou terreno). No fim, um resumo. Ordena por eleitorado, UF, vantagem de cada candidato ou menos apurado.
 Usa os arquivos do TSE das eleições 6257 (1º turno) e 6258 (2º turno), descobertos no `ele-c.json`
 (`?ele1=` / `?ele2=` forçam outros códigos; `?demo=1` mostra dados fictícios).
 
